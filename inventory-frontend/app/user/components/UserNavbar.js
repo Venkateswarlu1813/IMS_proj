@@ -8,8 +8,8 @@ import { motion } from "framer-motion";
 
 const navItems = [
   ["Home", "/user/dashboard", FaHome],
-  ["Products", "/products", FaBox],
-  ["Orders", "/orders", FaClipboardList],
+  ["Products", "/user/products", FaBox],
+  ["Orders", "/user/orders", FaClipboardList],
   ["Contact Us", "/contact", FaEnvelope],
   ["Dashboard", "/user/dashboard", FaUserCircle],
 ];
