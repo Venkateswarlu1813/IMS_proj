@@ -9,9 +9,11 @@ export default function Filters({ search, setSearch, category, setCategory }) {
       <div className="flex items-center gap-3">
         <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-2xl bg-white/6 px-3 py-2 text-sm">
           <option value="">All categories</option>
-          <option value="electronics">Electronics</option>
-          <option value="apparel">Apparel</option>
-          <option value="home">Home</option>
+          <option value="Electronics">Electronics</option>
+          <option value="Computer Accessories">Computer Accessories</option>
+          <option value="Office Supplies">Office Supplies</option>
+          <option value="Furniture">Furniture</option>
+          <option value="Home Appliances">Home Appliances</option>
         </select>
       </div>
     </div>

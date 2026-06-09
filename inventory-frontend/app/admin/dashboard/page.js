@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 
 import SalesChart from "@/app/components/SalesChart";
@@ -38,6 +38,8 @@ export default function AdminDashboard() {
   const [ordersCount, setOrdersCount] = useState(0);
   const [revenue, setRevenue] = useState(0);
   const [salesData, setSalesData] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   async function fetchDashboardData() {
 
@@ -69,6 +71,7 @@ export default function AdminDashboard() {
         : productsRes.data;
 
       setProductsCount(productsData.length);
+      setProducts(productsData);
 
       // USERS COUNT
       const usersData = usersRes.data.results
@@ -83,6 +86,7 @@ export default function AdminDashboard() {
         : ordersRes.data;
 
       setOrdersCount(ordersData.length);
+      setOrders(ordersData);
 
       // SALES ARRAY
       const salesArray = salesRes.data.results
@@ -121,9 +125,10 @@ useEffect(() => {
     return;
   }
 
-  fetchDashboardData();
+  const loadDashboard = setTimeout(fetchDashboardData, 0);
+  return () => clearTimeout(loadDashboard);
 
-}, []);
+}, [router]);
 
   const logout = () => {
 
@@ -177,18 +182,47 @@ useEffect(() => {
     },
   ];
 
-  const recentOrders = [
-    ["#ORD-001", "John Doe", "12,450", "Delivered", "08 Jun 2026"],
-    ["#ORD-002", "Jane Smith", "8,750", "Processing", "08 Jun 2026"],
-    ["#ORD-003", "Robert Brown", "15,230", "Pending", "07 Jun 2026"],
-    ["#ORD-004", "Emily Davis", "5,490", "Cancelled", "07 Jun 2026"],
-  ];
+  const recentOrders = useMemo(() => {
+    return orders.slice(0, 8).flatMap((order) => {
+      const items = order.items?.length ? order.items : [{ product_name: "Order items", quantity: "-", line_total: order.total_amount }];
+
+      return items.map((item) => ({
+        id: order.id,
+        customer: order.username || `User ${order.user}`,
+        product: item.product_name || `Product ${item.product}`,
+        quantity: item.quantity,
+        amount: Number(item.line_total || order.total_amount || 0),
+        status: order.order_status,
+        date: order.order_date,
+      }));
+    }).slice(0, 8);
+  }, [orders]);
+
+  const lowStockProducts = useMemo(
+    () => products.filter((product) => Number(product.stock) < 10),
+    [products]
+  );
+
+  const orderStatusStats = useMemo(() => {
+    const total = orders.length || 1;
+    const completed = orders.filter((order) => order.order_status === "completed").length;
+    const pending = orders.filter((order) => order.order_status === "pending").length;
+    const cancelled = orders.filter((order) => order.order_status === "cancelled").length;
+    const processing = Math.max(orders.length - completed - pending - cancelled, 0);
+
+    return [
+      ["Delivered", `${completed} (${Math.round((completed / total) * 100)}%)`, "bg-emerald-400"],
+      ["Processing", `${processing} (${Math.round((processing / total) * 100)}%)`, "bg-sky-400"],
+      ["Pending", `${pending} (${Math.round((pending / total) * 100)}%)`, "bg-amber-400"],
+      ["Cancelled", `${cancelled} (${Math.round((cancelled / total) * 100)}%)`, "bg-rose-400"],
+    ];
+  }, [orders]);
 
   const statusColors = {
-    Delivered: "bg-emerald-500/20 text-emerald-300",
-    Processing: "bg-sky-500/20 text-sky-300",
-    Pending: "bg-amber-500/20 text-amber-300",
-    Cancelled: "bg-rose-500/20 text-rose-300",
+    completed: "bg-emerald-500/20 text-emerald-300",
+    processing: "bg-sky-500/20 text-sky-300",
+    pending: "bg-amber-500/20 text-amber-300",
+    cancelled: "bg-rose-500/20 text-rose-300",
   };
 
   return (
@@ -324,12 +358,7 @@ useEffect(() => {
                   <div className="absolute inset-10 rounded-full bg-[#071834]" />
                 </div>
                 <div className="w-full space-y-4 text-sm">
-                  {[
-                    ["Delivered", "245 (45%)", "bg-emerald-400"],
-                    ["Processing", "150 (28%)", "bg-sky-400"],
-                    ["Pending", "100 (18%)", "bg-amber-400"],
-                    ["Cancelled", "47 (9%)", "bg-rose-400"],
-                  ].map(([label, value, color]) => (
+                  {orderStatusStats.map(([label, value, color]) => (
                     <div key={label} className="flex items-center justify-between gap-5">
                       <span className="flex items-center gap-3 text-slate-200"><span className={`h-3 w-3 rounded-full ${color}`} />{label}</span>
                       <span className="font-bold">{value}</span>
@@ -370,12 +399,14 @@ useEffect(() => {
             <div className="rounded-xl border border-white/10 bg-[#0b1b43]/75 p-5 shadow-xl shadow-black/20">
               <h2 className="mb-4 text-base font-black">Recent Orders</h2>
               <div className="overflow-x-auto rounded-lg">
-                <table className="w-full min-w-[680px] text-left text-sm">
+                <table className="w-full min-w-[900px] text-left text-sm">
                   <thead className="bg-white/[0.07] text-slate-300">
                     <tr>
                       <th className="px-4 py-3">#</th>
                       <th className="px-4 py-3">Order ID</th>
                       <th className="px-4 py-3">Customer</th>
+                      <th className="px-4 py-3">Product</th>
+                      <th className="px-4 py-3">Qty</th>
                       <th className="px-4 py-3">Amount</th>
                       <th className="px-4 py-3">Status</th>
                       <th className="px-4 py-3">Date</th>
@@ -383,14 +414,16 @@ useEffect(() => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentOrders.map(([id, customer, amount, status, date], index) => (
-                      <tr key={id} className="border-t border-white/5 hover:bg-white/[0.03]">
+                    {recentOrders.map((order, index) => (
+                      <tr key={`${order.id}-${index}`} className="border-t border-white/5 hover:bg-white/[0.03]">
                         <td className="px-4 py-3 text-slate-300">{index + 1}</td>
-                        <td className="px-4 py-3 font-semibold">{id}</td>
-                        <td className="px-4 py-3">{customer}</td>
-                        <td className="px-4 py-3">&#8377;{amount}</td>
-                        <td className="px-4 py-3"><span className={`rounded-md px-3 py-1 text-xs font-bold ${statusColors[status]}`}>{status}</span></td>
-                        <td className="px-4 py-3">{date}</td>
+                        <td className="px-4 py-3 font-semibold">#ORD-{String(order.id).padStart(3, "0")}</td>
+                        <td className="px-4 py-3">{order.customer}</td>
+                        <td className="px-4 py-3">{order.product}</td>
+                        <td className="px-4 py-3">{order.quantity}</td>
+                        <td className="px-4 py-3">&#8377;{order.amount.toLocaleString("en-IN")}</td>
+                        <td className="px-4 py-3"><span className={`rounded-md px-3 py-1 text-xs font-bold ${statusColors[order.status] || statusColors.pending}`}>{order.status}</span></td>
+                        <td className="px-4 py-3">{order.date ? new Date(order.date).toLocaleDateString("en-IN") : "-"}</td>
                         <td className="px-4 py-3"><FaEye className="text-slate-300" /></td>
                       </tr>
                     ))}
@@ -402,22 +435,25 @@ useEffect(() => {
             <div className="rounded-xl border border-white/10 bg-[#0b1b43]/75 p-5 shadow-xl shadow-black/20">
               <h2 className="mb-4 text-base font-black">Low Stock Alert</h2>
               <div className="space-y-4 text-sm">
-                {[
-                  ["Wireless Headphones", "5", FaHeadphones],
-                  ["Smart Watch", "3", MdWatch],
-                  ["Office Chair", "2", FaChair],
-                ].map(([name, count, Icon]) => (
-                  <div key={name} className="flex items-center justify-between border-b border-white/5 pb-3">
+                {lowStockProducts.slice(0, 5).map((product) => {
+                  const Icon = product.category_name === "Furniture" ? FaChair : product.product_name?.toLowerCase().includes("watch") ? MdWatch : FaHeadphones;
+
+                  return (
+                  <div key={product.id} className="flex items-center justify-between border-b border-white/5 pb-3">
                     <div className="flex items-center gap-3">
                       <Icon className="text-slate-300" />
                       <div>
-                        <p className="font-bold">{name}</p>
-                        <p className="text-xs text-slate-300">Stock: <span className="text-rose-300">{count}</span></p>
+                        <p className="font-bold">{product.product_name}</p>
+                        <p className="text-xs text-slate-300">Stock: <span className="text-rose-300">{product.stock}</span></p>
                       </div>
                     </div>
-                    <span className="font-black text-rose-400">{count}</span>
+                    <span className="font-black text-rose-400">{product.stock}</span>
                   </div>
-                ))}
+                  );
+                })}
+                {lowStockProducts.length === 0 ? (
+                  <p className="text-slate-300">No low stock products.</p>
+                ) : null}
               </div>
               <button className="mt-4 w-full rounded-lg border border-cyan-400/30 bg-cyan-500/10 py-2 text-sm font-bold text-violet-300 shadow-inner shadow-cyan-950/50">View All Products</button>
             </div>

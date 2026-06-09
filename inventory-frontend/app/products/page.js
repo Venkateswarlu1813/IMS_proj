@@ -28,6 +28,7 @@ export default function ProductsPage() {
     description: "",
     price: "",
     stock: "",
+    image_url: "",
     barcode: "",
     category: "",
     supplier: "",
@@ -39,7 +40,7 @@ export default function ProductsPage() {
   }, []);
 
   // FETCH PRODUCTS
-  const fetchProducts = async () => {
+  async function fetchProducts() {
 
     try {
 
@@ -54,7 +55,7 @@ export default function ProductsPage() {
       console.log(error);
 
     }
-  };
+  }
 
   // HANDLE INPUT
   const handleChange = (e) => {
@@ -117,6 +118,7 @@ export default function ProductsPage() {
       description: product.description,
       price: product.price,
       stock: product.stock,
+      image_url: product.image_url || "",
       barcode: product.barcode,
       category: product.category,
       supplier: product.supplier,
@@ -161,6 +163,7 @@ export default function ProductsPage() {
       description: "",
       price: "",
       stock: "",
+      image_url: "",
       barcode: "",
       category: "",
       supplier: "",
@@ -222,6 +225,7 @@ export default function ProductsPage() {
           <input type="text" name="description" placeholder="Description" value={formData.description} onChange={handleChange} className="ims-input" required />
           <input type="number" name="price" placeholder="Price" value={formData.price} onChange={handleChange} className="ims-input" required />
           <input type="number" name="stock" placeholder="Stock" value={formData.stock} onChange={handleChange} className="ims-input" required />
+          <input type="url" name="image_url" placeholder="Product Image URL" value={formData.image_url} onChange={handleChange} className="ims-input" />
           <input type="text" name="barcode" placeholder="Barcode" value={formData.barcode} onChange={handleChange} className="ims-input" required />
           <input type="number" name="category" placeholder="Category ID" value={formData.category} onChange={handleChange} className="ims-input" required />
           <input type="number" name="supplier" placeholder="Supplier ID" value={formData.supplier} onChange={handleChange} className="ims-input" required />
@@ -241,10 +245,12 @@ export default function ProductsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="ims-table min-w-[780px]">
+          <table className="ims-table min-w-[920px]">
             <thead className="ims-table-head">
               <tr>
+                <th className="p-5 text-left">Image</th>
                 <th className="p-5 text-left">Product</th>
+                <th className="p-5 text-left">Category</th>
                 <th className="p-5 text-left">Price</th>
                 <th className="p-5 text-left">Stock</th>
                 <th className="p-5 text-left">Barcode</th>
@@ -262,7 +268,15 @@ export default function ProductsPage() {
                 )
                 .map((product) => (
                   <tr key={product.id} className="ims-table-row">
+                    <td className="p-5">
+                      <img
+                        src={product.image_url || "https://images.unsplash.com/photo-1588508065123-287b28e013da?auto=format&fit=crop&w=900&q=80"}
+                        alt={product.product_name}
+                        className="h-14 w-14 rounded-lg object-cover"
+                      />
+                    </td>
                     <td className="p-5 font-semibold text-white">{product.product_name}</td>
+                    <td className="p-5">{product.category_name || product.category}</td>
                     <td className="p-5">&#8377; {product.price}</td>
                     <td className="p-5">
                       {product.stock <= 5 ? (

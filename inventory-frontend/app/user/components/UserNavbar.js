@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FaBell, FaEnvelope, FaBars, FaUserCircle, FaHome, FaBox, FaClipboardList } from "react-icons/fa";
+import { FaBell, FaEnvelope, FaBars, FaUserCircle, FaHome, FaBox, FaClipboardList, FaShoppingCart } from "react-icons/fa";
 import { motion } from "framer-motion";
 
 const navItems = [
-  ["Home", "/user/dashboard", FaHome],
+  ["Home", "/user/home", FaHome],
   ["Products", "/user/products", FaBox],
+  ["Cart", "/user/cart", FaShoppingCart],
   ["Orders", "/user/orders", FaClipboardList],
   ["Contact Us", "/contact", FaEnvelope],
   ["Dashboard", "/user/dashboard", FaUserCircle],
